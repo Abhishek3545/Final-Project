@@ -1,109 +1,150 @@
-# Welcome to your Lovable project
+# Retail Realm X
 
-## Project info
+A full-stack marketplace web app built with React, Vite, Tailwind, shadcn/ui, and Supabase.
 
-**URL**: https://lovable.dev/projects/7b744f1c-89df-4b54-8dc4-4b5990044fab
+The project includes:
 
-## How can I edit this code?
+- Multi-category commerce (products, clothes, grocery, travel, tickets)
+- Cart and wishlist with backend persistence
+- Checkout and order tracking timeline
+- Multi-mode authentication (email, Google, phone, and dummy mode)
+- Analytics dashboard with backend summary view and Excel-like planning sheet
+- System health dashboard for backend readiness checks
+- Theme switcher (Light, Dark, System)
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- Frontend: React 18, TypeScript, Vite
+- UI: Tailwind CSS, shadcn/ui, Radix UI, Lucide icons
+- Routing: React Router
+- Data fetching and caching: TanStack Query
+- Backend: Supabase (Auth, Postgres, RLS)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7b744f1c-89df-4b54-8dc4-4b5990044fab) and start prompting.
+## Key Features
 
-Changes made via Lovable will be committed automatically to this repo.
+### Commerce
 
-**Use your preferred IDE**
+- Product listing with search, filters, and sorting
+- Dedicated clothes page with backend and fallback data
+- Cart management with quantity updates and duplicate-safe insertion
+- Wishlist with add/remove and cart transfer
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Service Marketplace
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Travel packages with destination exploration section
+- Tickets marketplace with live events, bus tickets, and movie tickets
 
-Follow these steps:
+### Checkout and Tracking
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Checkout flow with order creation
+- Tracking events for order timeline and location display
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Auth and Session
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Email/password login and signup
+- Email magic link support
+- Google OAuth and phone OTP flows
+- Dummy auth mode for testing without external provider setup
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Analytics and Health
+
+- Analytics dashboard with KPI cards and daily summary table
+- Excel-like editable planning sheet with backend save and CSV export
+- Guest analytics mode (works without login using local storage)
+- Backend health dashboard with environment, network, auth, and table checks
+
+## Getting Started
+
+### 1. Install dependencies
+
+Run:
+
+npm install
+
+### 2. Configure environment
+
+Create a local environment file and set values:
+
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
+VITE_AUTH_DUMMY_MODE=true
+
+If you want strict real auth only, set:
+
+VITE_AUTH_DUMMY_MODE=false
+
+### 3. Apply Supabase migrations
+
+Run these SQL files in Supabase SQL Editor in order:
+
+1. supabase/migrations/20260409_add_budget_and_tracking.sql
+2. supabase/migrations/20260409_expand_marketplace_backend.sql
+3. supabase/migrations/20260409_seed_20plus_inventory.sql
+4. supabase/migrations/20260409_add_auth_demo_backend.sql
+5. supabase/migrations/20260409_add_cart_backend_and_seed_15_sets.sql
+6. supabase/migrations/20260409_add_analytics_dashboard_backend.sql
+
+### 4. Start development server
+
+Run:
+
 npm run dev
-```
 
-**Edit a file directly in GitHub**
+### 5. Build for production
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Run:
 
-**Use GitHub Codespaces**
+npm run build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Available Scripts
 
-## What technologies are used for this project?
+- npm run dev: Start local development server
+- npm run build: Production build
+- npm run build:dev: Development-mode build
+- npm run lint: Lint source files
+- npm run preview: Preview production build locally
 
-This project is built with:
+## Important Routes
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- /: Home
+- /products: All products
+- /clothes: Dedicated clothes catalog
+- /cart: Cart
+- /wishlist: Wishlist
+- /checkout: Checkout
+- /orders: Orders and bookings
+- /track-order: Tracking dashboard
+- /travel: Travel marketplace
+- /tickets: Tickets marketplace
+- /analytics: Analytics dashboard
+- /system-health: Backend health dashboard
 
-## Full-Stack Setup (Frontend + Backend)
+## Analytics Dashboard Notes
 
-This project uses Supabase as the backend for:
+The analytics module supports two modes:
 
-- Authentication
-- Products and categories
-- Cart and checkout
-- Orders and GPS tracking events
-- Wishlist
-- Travel packages and ticket offers
-- Service bookings
-- Budget calculator profiles
+- Signed-in mode: reads and writes analytics from Supabase backend
+- Guest mode: works without login using local browser storage
 
-### Run Backend Migrations
+Planning sheet supports:
 
-Apply these migrations in Supabase SQL editor (in order):
+- Editable rows and values
+- Save state
+- CSV export for spreadsheet usage
 
-1. `supabase/migrations/20260409_add_budget_and_tracking.sql`
-2. `supabase/migrations/20260409_expand_marketplace_backend.sql`
-3. `supabase/migrations/20260409_seed_20plus_inventory.sql`
-4. `supabase/migrations/20260409_add_auth_demo_backend.sql`
+## Backend and RLS Notes
 
-After running them, you will have 20+ dummy records per major marketplace section and all backend-driven pages will work.
+- Cart and wishlist tables use per-user row-level security
+- Service bookings and order tracking use user-scoped checks
+- Analytics sheet rows are user-scoped with unique period and metric keys
 
-### Dummy Auth Backend Mode
+## Troubleshooting
 
-If you want login methods to work without configuring Google OAuth or SMS provider, set:
+- If dashboard checks fail, open /system-health and run checks.
+- If auth providers fail, enable dummy mode with VITE_AUTH_DUMMY_MODE=true.
+- If cart, wishlist, travel, or analytics tables are missing, re-run migrations in order.
 
-`VITE_AUTH_DUMMY_MODE=true`
+## Project Status
 
-In this mode:
+This project is production-oriented and actively extended with advanced modules.
 
-- Google login, email login, and phone login are simulated.
-- Sessions are still created through Supabase auth using demo accounts.
-- Login events are stored in `auth_demo_events` backend table.
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7b744f1c-89df-4b54-8dc4-4b5990044fab) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
