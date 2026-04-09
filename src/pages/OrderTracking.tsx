@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { MapPin, Navigation, RefreshCw } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { MapPin, Navigation, RefreshCw, Star } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -41,13 +41,43 @@ const DUMMY_TRACKING_EVENTS: TrackingEvent[] = Array.from({ length: 12 }).map((_
   };
 });
 
+const getDemoTrackingData = (idToTrack?: string) => {
+  const demoOrderId = idToTrack?.trim() || DUMMY_ORDER.id;
+  return {
+    order: {
+      ...DUMMY_ORDER,
+      id: demoOrderId,
+      updated_at: new Date().toISOString(),
+    },
+    events: DUMMY_TRACKING_EVENTS.map((event) => ({
+      ...event,
+      order_id: demoOrderId,
+    })),
+  };
+};
+
+const formatElapsedTime = (elapsedMs: number) => {
+  const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  return `${hours}h ${minutes}m ${seconds}s`;
+};
+
 const OrderTracking = () => {
   const [orderId, setOrderId] = useState("");
   const [order, setOrder] = useState<Order | null>(null);
   const [events, setEvents] = useState<TrackingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [rating, setRating] = useState(0);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -59,8 +89,27 @@ const OrderTracking = () => {
     return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
   }, [latestEvent]);
 
+  const deliveredEvent = useMemo(
+    () => events.find((event) => event.status === "delivered") ?? null,
+    [events],
+  );
+
+  const deliveredAt = useMemo(() => {
+    if (deliveredEvent) return new Date(deliveredEvent.created_at);
+    if (order?.status === "delivered") return new Date(order.updated_at);
+    return null;
+  }, [deliveredEvent, order]);
+
+  const isOrderDelivered = order?.status === "delivered";
+  const elapsedSinceDelivered = deliveredAt ? formatElapsedTime(currentTime - deliveredAt.getTime()) : null;
+
   useEffect(() => {
     initializeTracking();
+  }, []);
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => window.clearInterval(timerId);
   }, []);
 
   useEffect(() => {
@@ -71,6 +120,26 @@ const OrderTracking = () => {
 
     return () => window.clearInterval(intervalId);
   }, [orderId]);
+
+  useEffect(() => {
+    if (!order?.id) {
+      setRating(0);
+      return;
+    }
+
+    const savedRating = window.localStorage.getItem(`order-rating-${order.id}`);
+    setRating(savedRating ? Number(savedRating) : 0);
+  }, [order?.id]);
+
+  const handleRating = (nextRating: number) => {
+    if (!order?.id || !isOrderDelivered) return;
+    setRating(nextRating);
+    window.localStorage.setItem(`order-rating-${order.id}`, String(nextRating));
+    toast({
+      title: "Rating submitted",
+      description: `You rated this order ${nextRating} out of 5.`,
+    });
+  };
 
   const initializeTracking = async () => {
     setLoading(true);
@@ -86,7 +155,18 @@ const OrderTracking = () => {
           setEvents(DUMMY_TRACKING_EVENTS);
           return;
         }
-        navigate("/auth");
+
+        const requestedOrderId = searchParams.get("orderId") || "";
+        if (requestedOrderId) {
+          setOrderId(requestedOrderId);
+          await fetchTracking(requestedOrderId, true);
+          return;
+        }
+
+        const demoTracking = getDemoTrackingData();
+        setOrderId(demoTracking.order.id);
+        setOrder(demoTracking.order);
+        setEvents(demoTracking.events);
         return;
       }
 
@@ -139,16 +219,25 @@ const OrderTracking = () => {
           setEvents(DUMMY_TRACKING_EVENTS);
           return;
         }
-        navigate("/auth");
+
+        const demoTracking = getDemoTrackingData(idToTrack);
+        setOrder(demoTracking.order);
+        setEvents(demoTracking.events);
         return;
       }
 
-      const { data: foundOrder, error: orderError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", idToTrack)
-        .eq("user_id", user.id)
-        .maybeSingle();
+      const { data: foundOrder, error: orderError } = user
+        ? await supabase
+            .from("orders")
+            .select("*")
+            .eq("id", idToTrack)
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : await supabase
+            .from("orders")
+            .select("*")
+            .eq("id", idToTrack)
+            .maybeSingle();
 
       if (orderError) throw orderError;
 
@@ -315,6 +404,48 @@ const OrderTracking = () => {
                   ) : (
                     <p className="text-sm text-muted-foreground">GPS not published yet.</p>
                   )}
+                </div>
+
+                <div className="border-t pt-4 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Order Completion Timer</p>
+                    {isOrderDelivered && elapsedSinceDelivered ? (
+                      <p className="text-sm text-muted-foreground">
+                        Delivered {elapsedSinceDelivered} ago
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Timer starts once the order is delivered.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Rate This Delivery</p>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleRating(star)}
+                          disabled={!isOrderDelivered}
+                          className="p-1 rounded-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                          aria-label={`Rate ${star} out of 5`}
+                        >
+                          <Star
+                            className={`w-5 h-5 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isOrderDelivered
+                        ? rating > 0
+                          ? `Current rating: ${rating}/5`
+                          : "Tap a star to rate your delivered order."
+                        : "Rating is enabled after delivery is completed."}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

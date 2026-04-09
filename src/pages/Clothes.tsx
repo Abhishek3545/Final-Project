@@ -4,6 +4,7 @@ import { Heart, Shirt, ShoppingCart, Star } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import BackButton from "@/components/BackButton";
 import { supabase } from "@/integrations/supabase/client";
+import { addProductToCart } from "@/lib/cart";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -11,11 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Product = Tables<"products">;
-
-type CartLite = {
-  id: string;
-  quantity: number;
-};
 
 const nowIso = new Date().toISOString();
 
@@ -118,29 +114,7 @@ const Clothes = () => {
     }
 
     try {
-      const { data: existingItem, error: existingError } = await supabase
-        .from("cart_items")
-        .select("id, quantity")
-        .eq("user_id", user.id)
-        .eq("product_id", product.id)
-        .maybeSingle<CartLite>();
-
-      if (existingError) throw existingError;
-
-      if (existingItem) {
-        const { error: updateError } = await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq("id", existingItem.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase.from("cart_items").insert({
-          user_id: user.id,
-          product_id: product.id,
-          quantity: 1,
-        });
-        if (insertError) throw insertError;
-      }
+      await addProductToCart(product.id, 1);
 
       toast({
         title: "Added to cart",

@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import BackButton from "@/components/BackButton";
+import { addProductToCart } from "@/lib/cart";
 
 type WishlistItem = {
   id: string;
@@ -83,30 +84,7 @@ const Wishlist = () => {
         return;
       }
 
-      const { data: existingItem, error: existingError } = await supabase
-        .from("cart_items")
-        .select("id, quantity")
-        .eq("user_id", user.id)
-        .eq("product_id", productId)
-        .maybeSingle();
-
-      if (existingError) throw existingError;
-
-      if (existingItem) {
-        const { error: updateError } = await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + 1 })
-          .eq("id", existingItem.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase.from("cart_items").insert({
-          user_id: user.id,
-          product_id: productId,
-          quantity: 1,
-        });
-
-        if (insertError) throw insertError;
-      }
+      await addProductToCart(productId, 1);
 
       toast({
         title: "Added to cart",

@@ -7,12 +7,9 @@ import { Star, ShoppingCart, ArrowLeft, Heart } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { addProductToCart } from "@/lib/cart";
 
 type Product = Tables<"products">;
-type CartLite = {
-  id: string;
-  quantity: number;
-};
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -63,30 +60,7 @@ const ProductDetail = () => {
     if (!product) return;
 
     try {
-      const { data: existingItem, error: existingError } = await supabase
-        .from("cart_items")
-        .select("id, quantity")
-        .eq("user_id", user.id)
-        .eq("product_id", product.id)
-        .maybeSingle<CartLite>();
-
-      if (existingError) throw existingError;
-
-      if (existingItem) {
-        const { error: updateError } = await supabase
-          .from("cart_items")
-          .update({ quantity: existingItem.quantity + quantity })
-          .eq("id", existingItem.id);
-        if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase.from("cart_items").insert({
-          user_id: user.id,
-          product_id: product.id,
-          quantity,
-        });
-
-        if (insertError) throw insertError;
-      }
+      await addProductToCart(product.id, quantity);
 
       toast({
         title: "Added to cart",

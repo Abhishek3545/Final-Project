@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/hooks/use-toast";
+import { removeCartItem, setCartItemQuantity } from "@/lib/cart";
 
 type CartItem = {
   id: string;
@@ -70,13 +71,8 @@ const Cart = () => {
     if (newQuantity < 1) return;
 
     try {
-      const { error } = await supabase
-        .from("cart_items")
-        .update({ quantity: newQuantity })
-        .eq("id", itemId);
-
-      if (error) throw error;
-      fetchCart();
+      await setCartItemQuantity(itemId, newQuantity);
+      await fetchCart();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -88,13 +84,8 @@ const Cart = () => {
 
   const removeItem = async (itemId: string) => {
     try {
-      const { error } = await supabase
-        .from("cart_items")
-        .delete()
-        .eq("id", itemId);
-
-      if (error) throw error;
-      fetchCart();
+      await removeCartItem(itemId);
+      await fetchCart();
       toast({
         title: "Item removed",
         description: "Item has been removed from your cart",

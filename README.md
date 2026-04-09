@@ -82,7 +82,9 @@ Run these SQL files in Supabase SQL Editor in order:
 3. supabase/migrations/20260409_seed_20plus_inventory.sql
 4. supabase/migrations/20260409_add_auth_demo_backend.sql
 5. supabase/migrations/20260409_add_cart_backend_and_seed_15_sets.sql
-6. supabase/migrations/20260409_add_analytics_dashboard_backend.sql
+6. supabase/migrations/20260409_add_cart_rpc_backend.sql
+7. supabase/migrations/20260409_add_analytics_dashboard_backend.sql
+8. supabase/migrations/20260409_add_real_order_backend.sql
 
 ### 4. Start development server
 
@@ -141,7 +143,9 @@ Planning sheet supports:
 ## Troubleshooting
 
 - If dashboard checks fail, open /system-health and run checks.
-- If auth providers fail, enable dummy mode with VITE_AUTH_DUMMY_MODE=true.
+- For real backend testing, set VITE_AUTH_DUMMY_MODE=false.
+- If you do not have Supabase CLI, run migration SQL files manually in Supabase SQL Editor.
+- If checkout fails with function errors, confirm `place_order_from_cart` and `submit_order_rating` were created by `20260409_add_real_order_backend.sql`.
 - If cart, wishlist, travel, or analytics tables are missing, re-run migrations in order.
 
 ## Project Status
